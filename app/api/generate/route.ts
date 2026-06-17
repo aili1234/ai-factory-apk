@@ -1,12 +1,30 @@
-import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const prompt = body.prompt || "";
+    const prompt = body.prompt || "Create app idea";
 
-    const result = "AI generation endpoint is connected and saved";
+    const aiRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "llama-3.1-8b-instant",
+        messages: [
+          { role: "system", content: "You are an expert app builder. Return practical app idea, features, monetisation, and build plan." },
+          { role: "user", content: prompt }
+        ],
+        temperature: 0.7
+      })
+    });
+
+    const aiJson = await aiRes.json();
+    const result =
+      aiJson?.choices?.[0]?.message?.content ||
+      "AI provider did not return text.";
 
     const supabase = createClient(
       process.env.SUPABASE_URL || "",
@@ -20,8 +38,8 @@ export async function POST(req: Request) {
 
     if (error) throw error;
 
-    return NextResponse.json({ ok: true, saved: true, prompt, result });
+    return Response.json({ ok: true, saved: true, prompt, result });
   } catch (err: any) {
-    return NextResponse.json({ ok: false, error: err.message }, { status: 500 });
+    return Response.json({ ok: false, error: err.message }, { status: 500 });
   }
 }
