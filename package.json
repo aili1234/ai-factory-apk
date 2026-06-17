@@ -5,15 +5,16 @@
     "start": "next start"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.108.2",
     "next": "latest",
+    "openai": "^6.43.0",
     "react": "latest",
     "react-dom": "latest",
-    "stripe": "latest",
-    "@supabase/supabase-js": "latest"
+    "stripe": "latest"
   },
   "devDependencies": {
-    "typescript": "latest",
     "@types/node": "latest",
-    "@types/react": "latest"
+    "@types/react": "latest",
+    "typescript": "latest"
   }
 }
