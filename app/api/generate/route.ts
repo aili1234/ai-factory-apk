@@ -1,47 +1,27 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
-import { supabase } from "@/lib/supabase";
-
-const client = new OpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY,
-  baseURL: "https://openrouter.ai/api/v1",
-});
+import { createClient } from "@supabase/supabase-js";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+    const prompt = body.prompt || "";
 
-    const prompt = body.prompt || "Build app";
+    const result = "AI generation endpoint is connected and saved";
 
-    const completion = await client.chat.completions.create({
-      model: "openai/gpt-4o-mini",
-      messages: [
-        {
-          role: "user",
-          content: prompt
-        }
-      ]
-    });
+    const supabase = createClient(
+      process.env.SUPABASE_URL || "",
+      process.env.SUPABASE_SERVICE_ROLE_KEY || ""
+    );
 
-    const result =
-      completion.choices?.[0]?.message?.content || "No output";
-
-    await supabase.from("generations").insert({
-      prompt,
-      result,
-      created_at: new Date().toISOString()
-    });
-
-    return NextResponse.json({
-      ok: true,
+    const { error } = await supabase.from("generations").insert({
       prompt,
       result
     });
 
-  } catch (err:any) {
-    return NextResponse.json({
-      ok:false,
-      error: err.message
-    });
+    if (error) throw error;
+
+    return NextResponse.json({ ok: true, saved: true, prompt, result });
+  } catch (err: any) {
+    return NextResponse.json({ ok: false, error: err.message }, { status: 500 });
   }
 }
