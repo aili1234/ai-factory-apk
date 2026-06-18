@@ -1,0 +1,68 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Capacitor
+        run: |
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+
+      - name: Build web
+        run: |
+          mkdir -p www
+          cat > www/index.html <<'HTML'
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>AI Factory APK</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+          </head>
+          <body style="font-family:sans-serif;padding:40px">
+            <h1>AI Factory APK Working</h1>
+            <button onclick="alert('AI APK WORKING')">
+              Test APK
+            </button>
+          </body>
+          </html>
+          HTML
+
+      - name: Capacitor Init
+        run: |
+          npx cap init "AI Factory APK" "com.aifactory.cloud" --web-dir=www
+
+      - name: Add Android
+        run: npx cap add android
+
+      - name: Build APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-factory-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
