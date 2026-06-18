@@ -3,20 +3,16 @@ name: Build Android APK
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -29,35 +25,20 @@ jobs:
           cd apkbuild
 
           cat > package.json <<'JSON'
-          {
-            "name": "ai-factory-apk",
-            "version": "1.0.0",
-            "dependencies": {
-              "@capacitor/android": "latest",
-              "@capacitor/cli": "latest",
-              "@capacitor/core": "latest"
-            }
-          }
+          {"name":"ai-factory-apk","version":"1.0.0","dependencies":{"@capacitor/android":"latest","@capacitor/cli":"latest","@capacitor/core":"latest"}}
           JSON
 
           cat > capacitor.config.json <<'JSON'
-          {
-            "appId": "com.aifactory.real",
-            "appName": "AI Factory Real APK",
-            "webDir": "www"
-          }
+          {"appId":"com.aifactory.real","appName":"AI Factory Real APK","webDir":"www"}
           JSON
 
           cat > www/index.html <<'HTML'
           <!doctype html>
           <html>
-          <head>
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-            <title>AI Factory Real APK</title>
-          </head>
+          <head><meta name="viewport" content="width=device-width, initial-scale=1"><title>AI Factory Real APK</title></head>
           <body style="font-family:Arial;padding:25px">
             <h1>AI Factory Real APK</h1>
-            <p>This is a real installable APK built by GitHub Actions.</p>
+            <p>Real installable APK built by GitHub Actions.</p>
             <button onclick="alert('APK button works')">Test Button</button>
           </body>
           </html>
