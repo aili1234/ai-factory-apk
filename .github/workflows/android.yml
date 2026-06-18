@@ -1,43 +1,150 @@
 name: Build Android APK
 
 on:
+  workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install Java
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      - name: Install dependencies
-        run: npm install
+      - uses: android-actions/setup-android@v3
 
-      - name: Capacitor sync
-        run: npx cap sync android
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Create native Android app
+        run: |
+          rm -rf apkbuild
+          mkdir -p apkbuild/app/src/main/java/com/aifactory/real
+          mkdir -p apkbuild/app/src/main/res/values
+          cd apkbuild
+
+          cat > settings.gradle <<'GRADLE'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "AI Factory Real APK"
+          include ':app'
+          GRADLE
+
+          cat > build.gradle <<'GRADLE'
+          plugins {
+              id 'com.android.application' version '8.6.1' apply false
+          }
+          GRADLE
+
+          cat > app/build.gradle <<'GRADLE'
+          plugins {
+              id 'com.android.application'
+          }
+
+          android {
+              namespace 'com.aifactory.real'
+              compileSdk 35
+
+              defaultConfig {
+                  applicationId 'com.aifactory.real'
+                  minSdk 23
+                  targetSdk 35
+                  versionCode 1
+                  versionName '1.0'
+              }
+          }
+          GRADLE
+
+          cat > app/src/main/AndroidManifest.xml <<'XML'
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <application
+                  android:theme="@style/AppTheme"
+                  android:label="AI Factory Real APK">
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          XML
+
+          cat > app/src/main/res/values/styles.xml <<'XML'
+          <resources>
+              <style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar"/>
+          </resources>
+          XML
+
+          cat > app/src/main/java/com/aifactory/real/MainActivity.java <<'JAVA'
+          package com.aifactory.real;
+
+          import android.app.Activity;
+          import android.os.Bundle;
+          import android.widget.*;
+          import android.view.Gravity;
+
+          public class MainActivity extends Activity {
+              @Override
+              protected void onCreate(Bundle b) {
+                  super.onCreate(b);
+
+                  LinearLayout layout = new LinearLayout(this);
+                  layout.setOrientation(LinearLayout.VERTICAL);
+                  layout.setPadding(40, 60, 40, 40);
+                  layout.setGravity(Gravity.CENTER_HORIZONTAL);
+
+                  TextView title = new TextView(this);
+                  title.setText("AI Factory Real APK");
+                  title.setTextSize(28);
+                  title.setGravity(Gravity.CENTER);
+
+                  TextView text = new TextView(this);
+                  text.setText("This is a real installable Android app built by GitHub Actions.");
+                  text.setTextSize(18);
+                  text.setPadding(0, 30, 0, 30);
+
+                  Button btn = new Button(this);
+                  btn.setText("Test App Button");
+                  btn.setOnClickListener(v ->
+                      Toast.makeText(this, "APK button works", Toast.LENGTH_LONG).show()
+                  );
+
+                  layout.addView(title);
+                  layout.addView(text);
+                  layout.addView(btn);
+
+                  setContentView(layout);
+              }
+          }
+          JAVA
 
       - name: Build APK
         run: |
-          cd android
-          chmod +x gradlew
-          ./gradlew assembleDebug
+          cd apkbuild
+          gradle :app:assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: android-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: android-apk-real
+          path: apkbuild/app/build/outputs/apk/debug/app-debug.apk
